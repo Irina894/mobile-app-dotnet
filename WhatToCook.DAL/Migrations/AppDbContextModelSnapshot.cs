@@ -17,6 +17,30 @@ namespace WhatToCook.DAL.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.13");
 
+            modelBuilder.Entity("WhatToCook.DAL.Entities.FavoriteRecipe", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RecipeId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipeId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("FavoriteRecipes");
+                });
+
             modelBuilder.Entity("WhatToCook.DAL.Entities.Ingredient", b =>
                 {
                     b.Property<int>("Id")
@@ -28,7 +52,6 @@ namespace WhatToCook.DAL.Migrations
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsAllergen")
@@ -36,7 +59,6 @@ namespace WhatToCook.DAL.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -58,15 +80,14 @@ namespace WhatToCook.DAL.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImageUrl")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsFavorite")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("MoodTag")
                         .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Rating")
@@ -102,7 +123,6 @@ namespace WhatToCook.DAL.Migrations
 
                     b.Property<string>("Unit")
                         .IsRequired()
-                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -112,6 +132,52 @@ namespace WhatToCook.DAL.Migrations
                     b.HasIndex("RecipeId");
 
                     b.ToTable("RecipeIngredients");
+                });
+
+            modelBuilder.Entity("WhatToCook.DAL.Entities.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("WhatToCook.DAL.Entities.FavoriteRecipe", b =>
+                {
+                    b.HasOne("WhatToCook.DAL.Entities.Recipe", "Recipe")
+                        .WithMany("FavoriteRecipes")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WhatToCook.DAL.Entities.User", "User")
+                        .WithMany("FavoriteRecipes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WhatToCook.DAL.Entities.RecipeIngredient", b =>
@@ -140,7 +206,14 @@ namespace WhatToCook.DAL.Migrations
 
             modelBuilder.Entity("WhatToCook.DAL.Entities.Recipe", b =>
                 {
+                    b.Navigation("FavoriteRecipes");
+
                     b.Navigation("RecipeIngredients");
+                });
+
+            modelBuilder.Entity("WhatToCook.DAL.Entities.User", b =>
+                {
+                    b.Navigation("FavoriteRecipes");
                 });
 #pragma warning restore 612, 618
         }

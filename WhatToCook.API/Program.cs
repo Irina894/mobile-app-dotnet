@@ -1,38 +1,50 @@
 using Microsoft.EntityFrameworkCore;
+using WhatToCook.BLL.Interfaces;
+using WhatToCook.BLL.Profiles;
+using WhatToCook.BLL.Services;
 using WhatToCook.DAL.Data;
+using WhatToCook.DAL.Repositories;
 
-public class Program
+var builder = WebApplication.CreateBuilder(args);
+
+// --- 1. РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ СЃС‚Р°РЅРґР°СЂС‚РЅРёС… СЃРµСЂРІС–СЃС–РІ API ---
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// --- 2. РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Р±Р°Р·Рё РґР°РЅРёС… (DAL) ---
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(connectionString));
+
+// --- 3. Р РµС”СЃС‚СЂР°С†С–СЏ Р РµРїРѕР·РёС‚РѕСЂС–СЋ (DAL) ---
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+// --- 4. РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ AutoMapper (РўРІС–Р№ Р‘Р»РѕРє 3) ---
+builder.Services.AddAutoMapper(cfg =>
 {
-    public static void Main(string[] args)
-    {
-        var builder = WebApplication.CreateBuilder(args);
+    cfg.AddProfile<MappingProfile>();
+}, typeof(Program));
 
-        // 1. Спочатку додаємо всі сервіси (ДО builder.Build())
-        builder.Services.AddControllers();
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+// --- 5. Р РµС”СЃС‚СЂР°С†С–СЏ РўР’РћР‡РҐ РЎРµСЂРІС–СЃС–РІ (РўРІС–Р№ Р‘Р»РѕРє 3 - BLL) ---
+// РљРѕР¶РµРЅ С–РЅС‚РµСЂС„РµР№СЃ С‚РµРїРµСЂ Р·РІ'СЏР·Р°РЅРёР№ Р·С– СЃРІРѕС—Рј РєР»Р°СЃРѕРј-СЃРµСЂРІС–СЃРѕРј
+builder.Services.AddScoped<IRecipeService, RecipeService>();
+builder.Services.AddScoped<IIngredientService, IngredientService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 
-        // Отримуємо рядок підключення
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// --- 6. РџРѕР±СѓРґРѕРІР° РґРѕРґР°С‚РєСѓ ---
+var app = builder.Build();
 
-        // РЕЄСТРУЄМО КОНТЕКСТ ТУТ
-        builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite(connectionString));
-
-        // 2. Створюємо додаток (ТІЛЬКИ ПІСЛЯ реєстрації всіх сервісів)
-        var app = builder.Build();
-
-        // 3. Налаштовуємо Middleware
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
-
-        app.UseHttpsRedirection();
-        app.UseAuthorization();
-        app.MapControllers();
-
-        app.Run();
-    }
+// --- 7. РќР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Middleware ---
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();

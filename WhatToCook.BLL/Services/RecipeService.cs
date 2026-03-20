@@ -44,4 +44,22 @@ public class RecipeService : IRecipeService
 
         return _mapper.Map<RecipeDto>(recipeEntity);
     }
+
+    public async Task UpdateRecipeAsync(int id, UpdateRecipeDto dto)
+    {
+        var recipe = await _recipeRepository.GetByIdAsync(id);
+
+        if (recipe == null)
+        {
+            throw new KeyNotFoundException("Recipe not found.");
+        }
+
+        _mapper.Map(dto, recipe);
+        await _recipeRepository.UpdateAsync(recipe);
+    }
+
+    public async Task DeleteRecipeAsync(int id)
+    {
+        await _recipeRepository.DeleteAsync(id);
+    }
 }

@@ -8,22 +8,57 @@ namespace WhatToCook.BLL.Services;
 
 public class IngredientService : IIngredientService
 {
-    private readonly IRepository<Ingredient> _repository;
+    private readonly IRepository<Ingredient> _ingredientRepository;
     private readonly IMapper _mapper;
 
-    public IngredientService(IRepository<Ingredient> repository, IMapper mapper)
+    public IngredientService(IRepository<Ingredient> ingredientRepository, IMapper mapper)
     {
-        _repository = repository;
+        _ingredientRepository = ingredientRepository;
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<IngredientDto>> GetAllAsync() =>
-        _mapper.Map<IEnumerable<IngredientDto>>(await _repository.GetAllAsync());
-
-    public async Task<IngredientDto> CreateAsync(IngredientDto dto)
+    public async Task<IEnumerable<IngredientDto>> GetAllIngredientsAsync()
     {
-        var entity = _mapper.Map<Ingredient>(dto);
-        await _repository.AddAsync(entity);
-        return _mapper.Map<IngredientDto>(entity);
+        var ingredients = await _ingredientRepository.GetAllAsync();
+        return _mapper.Map<IEnumerable<IngredientDto>>(ingredients);
+    }
+
+    public async Task<IngredientDto?> GetIngredientByIdAsync(int id)
+    {
+        var ingredient = await _ingredientRepository.GetByIdAsync(id);
+
+        if (ingredient == null)
+        {
+            return null;
+        }
+
+        return _mapper.Map<IngredientDto>(ingredient);
+    }
+
+    public async Task<IngredientDto> CreateIngredientAsync(CreateIngredientDto dto)
+    {
+        var ingredientEntity = _mapper.Map<Ingredient>(dto);
+
+        await _ingredientRepository.AddAsync(ingredientEntity);
+
+        return _mapper.Map<IngredientDto>(ingredientEntity);
+    }
+
+    public async Task UpdateIngredientAsync(int id, UpdateIngredientDto dto)
+    {
+        var ingredient = await _ingredientRepository.GetByIdAsync(id);
+
+        if (ingredient == null)
+        {
+            throw new KeyNotFoundException("Ingredient not found.");
+        }
+
+        _mapper.Map(dto, ingredient);
+        await _ingredientRepository.UpdateAsync(ingredient);
+    }
+
+    public async Task DeleteIngredientAsync(int id)
+    {
+        await _ingredientRepository.DeleteAsync(id);
     }
 }

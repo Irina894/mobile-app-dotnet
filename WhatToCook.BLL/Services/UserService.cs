@@ -8,23 +8,51 @@ namespace WhatToCook.BLL.Services;
 
 public class UserService : IUserService
 {
-    private readonly IRepository<User> _repository;
+    private readonly IRepository<User> _userRepo;
     private readonly IMapper _mapper;
 
-    public UserService(IRepository<User> repository, IMapper mapper)
+    public UserService(IRepository<User> userRepo, IMapper mapper)
     {
-        _repository = repository;
+        _userRepo = userRepo;
         _mapper = mapper;
     }
 
-    public async Task<UserDto> RegisterAsync(RegisterUserDto dto)
-    {
-        var user = _mapper.Map<User>(dto);
-        user.PasswordHash = dto.Password; // Тимчасово
-        await _repository.AddAsync(user);
-        return _mapper.Map<UserDto>(user);
+    // 1. Реалізація GetAllAsync (Виправляє помилку GetAllAsync)
+    public async Task<IEnumerable<UserDto>> GetAllAsync()
+    { var users = await _userRepo.GetAllAsync(); 
+         return _mapper.Map<IEnumerable<UserDto>>(users); 
     }
 
-    public async Task<UserDto?> GetByIdAsync(int id) =>
-        _mapper.Map<UserDto>(await _repository.GetByIdAsync(id));
+    // 2. Реалізація GetByIdAsync
+    public async Task<UserDto?> GetByIdAsync(int id)
+    {
+     var user = await _userRepo.GetByIdAsync(id); 
+         return _mapper.Map<UserDto>(user); 
+    }
+
+    // 3. Реалізація RegisterAsync
+    public async Task<UserDto> RegisterAsync(RegisterUserDto dto)
+    {
+        var userEntity = _mapper.Map<User>(dto); 
+       await _userRepo.AddAsync(userEntity);
+        return _mapper.Map<UserDto>(userEntity); 
+    }
+
+    // 4. Реалізація UpdateAsync (Виправляє помилку UpdateAsync)
+    public async Task UpdateAsync(int id, UserDto dto)
+    {
+       var existingUser = await _userRepo.GetByIdAsync(id); 
+        if (existingUser != null)
+        {
+            // Мапимо дані з DTO в існуючу сутність
+          _mapper.Map(dto, existingUser); 
+           await _userRepo.UpdateAsync(existingUser); 
+        }
+    }
+
+    // 5. Реалізація DeleteAsync (Виправляє помилку DeleteAsync)
+    public async Task DeleteAsync(int id)
+    {
+        await _userRepo.DeleteAsync(id); 
+    }
 }

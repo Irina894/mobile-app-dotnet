@@ -3,6 +3,7 @@ namespace WhatToCook.BLL.Interfaces;
 
 public interface IFavoriteService
 {
-    Task AddToFavoriteAsync(int userId, int recipeId);
     Task<IEnumerable<FavoriteRecipeDto>> GetUserFavoritesAsync(int userId);
+    Task<FavoriteRecipeDto> AddToFavoritesAsync(CreateFavoriteRecipeDto dto);
+    Task RemoveFromFavoritesAsync(int userId, int recipeId);
 }

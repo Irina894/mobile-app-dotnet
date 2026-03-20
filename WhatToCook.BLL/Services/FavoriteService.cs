@@ -4,8 +4,6 @@ using WhatToCook.BLL.Interfaces;
 using WhatToCook.DAL.Entities;
 using WhatToCook.DAL.Repositories;
 
-namespace WhatToCook.BLL.Services;
-
 public class FavoriteService : IFavoriteService
 {
     private readonly IRepository<FavoriteRecipe> _favoriteRepo;
@@ -17,15 +15,27 @@ public class FavoriteService : IFavoriteService
         _mapper = mapper;
     }
 
-    public async Task AddToFavoriteAsync(int userId, int recipeId)
+    public async Task<FavoriteRecipeDto> AddToFavoritesAsync(CreateFavoriteRecipeDto dto)
     {
-        await _favoriteRepo.AddAsync(new FavoriteRecipe { UserId = userId, RecipeId = recipeId });
+        var favoriteEntity = _mapper.Map<FavoriteRecipe>(dto);
+        await _favoriteRepo.AddAsync(favoriteEntity); // Додавання через репозиторій [cite: 121]
+        return _mapper.Map<FavoriteRecipeDto>(favoriteEntity);
     }
 
     public async Task<IEnumerable<FavoriteRecipeDto>> GetUserFavoritesAsync(int userId)
     {
-        var favorites = await _favoriteRepo.GetAllAsync();
+        var favorites = await _favoriteRepo.GetAllAsync(); // Отримання всіх [cite: 108]
         var userFavorites = favorites.Where(f => f.UserId == userId);
         return _mapper.Map<IEnumerable<FavoriteRecipeDto>>(userFavorites);
+    }
+
+    public async Task RemoveFromFavoritesAsync(int userId, int recipeId)
+    {
+        var favorites = await _favoriteRepo.GetAllAsync();
+        var favorite = favorites.FirstOrDefault(f => f.UserId == userId && f.RecipeId == recipeId);
+        if (favorite != null)
+        {
+            await _favoriteRepo.DeleteAsync(favorite.Id); // Видалення за ID [cite: 114]
+        }
     }
 }

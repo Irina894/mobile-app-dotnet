@@ -12,4 +12,6 @@ public interface IRecipeService
 
     // Додати новий рецепт
     Task<RecipeDto> CreateRecipeAsync(CreateRecipeDto dto);
+    Task UpdateRecipeAsync(int id, UpdateRecipeDto dto);
+        Task DeleteRecipeAsync(int id);
 }

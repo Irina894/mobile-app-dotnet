@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WhatToCook.DAL.Data;
 
 namespace WhatToCook.DAL.Repositories;
@@ -17,7 +11,7 @@ public class Repository<T> : IRepository<T> where T : class
     public Repository(AppDbContext context)
     {
         _context = context;
-        _dbSet = _context.Set<T>();
+        _dbSet = _context.Set<T>(); 
     }
 
     public async Task<IEnumerable<T>> GetAllAsync()
@@ -36,44 +30,30 @@ public class Repository<T> : IRepository<T> where T : class
         await _context.SaveChangesAsync();
     }
 
+
     public async Task UpdateAsync(T entity)
     {
-        var entityType = _context.Model.FindEntityType(typeof(T));
-        var primaryKey = entityType?.FindPrimaryKey()?.Properties.FirstOrDefault();
+        var idProperty = entity.GetType().GetProperty("Id");
+        if (idProperty == null) throw new Exception("Entity must have an Id property");
 
-        if (primaryKey == null)
+        var id = (int)idProperty.GetValue(entity)!;
+
+        var existing = await _dbSet.FindAsync(id);
+
+        if (existing != null)
         {
-            throw new InvalidOperationException($"Entity {typeof(T).Name} does not have a primary key.");
+            _context.Entry(existing).CurrentValues.SetValues(entity);
+            await _context.SaveChangesAsync();
         }
-
-        var keyValue = primaryKey.PropertyInfo?.GetValue(entity);
-
-        if (keyValue == null)
-        {
-            throw new InvalidOperationException($"Entity {typeof(T).Name} has null primary key value.");
-        }
-
-        var existingEntity = await _dbSet.FindAsync(keyValue);
-
-        if (existingEntity == null)
-        {
-            throw new InvalidOperationException($"{typeof(T).Name} with key {keyValue} was not found.");
-        }
-
-        _context.Entry(existingEntity).CurrentValues.SetValues(entity);
-        await _context.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)
     {
         var entity = await _dbSet.FindAsync(id);
-
-        if (entity == null)
+        if (entity != null)
         {
-            return;
+            _dbSet.Remove(entity);
+            await _context.SaveChangesAsync();
         }
-
-        _dbSet.Remove(entity);
-        await _context.SaveChangesAsync();
     }
 }

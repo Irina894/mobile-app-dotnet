@@ -5,6 +5,7 @@ using WhatToCook.BLL.Services;
 using WhatToCook.DAL.Data;
 using WhatToCook.DAL.Repositories;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. Налаштування стандартних сервісів API ---
@@ -19,6 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // --- 3. Реєстрація Репозиторію (DAL) ---
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
 
 // --- 4. Налаштування AutoMapper (Твій Блок 3) ---
 builder.Services.AddAutoMapper(cfg =>

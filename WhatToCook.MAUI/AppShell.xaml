@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="WhatToCook.MAUI.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:WhatToCook.MAUI.Views"
+    Shell.FlyoutBehavior="Disabled">
+
+    <TabBar>
+
+        <Tab Icon="home.png">
+            <ShellContent ContentTemplate="{DataTemplate views:HomePage}" />
+        </Tab>
+
+        <Tab Icon="calendar.png">
+            <ShellContent ContentTemplate="{DataTemplate views:CalendarPage}" />
+        </Tab>
+
+        <Tab Icon="add.png">
+            <ShellContent ContentTemplate="{DataTemplate views:AddRecipePage}" />
+        </Tab>
+
+        <Tab Icon="heart_menu.png">
+            <ShellContent ContentTemplate="{DataTemplate views:FavoritesPage}" />
+        </Tab>
+
+        <Tab Icon="user.png">
+            <ShellContent ContentTemplate="{DataTemplate views:ProfilePage}" />
+        </Tab>
+
+    </TabBar>
+
+</Shell>

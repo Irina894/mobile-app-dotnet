@@ -1,0 +1,6 @@
+@WhatToCook.API_HostAddress = http://localhost:5033
+
+GET {{WhatToCook.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="WhatToCook.MAUI.Views.FavoritesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:WhatToCook.MAUI.ViewModels"
+    xmlns:model="clr-namespace:WhatToCook.MAUI.Models"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{StaticResource Background}">
+
+    <ContentPage.BindingContext>
+        <vm:FavoritesViewModel/>
+    </ContentPage.BindingContext>
+
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Spacing="0">
+
+                <!-- ═══ HEADER ═══ -->
+                <VerticalStackLayout
+                    Padding="20,52,20,16"
+                    Spacing="14"
+                    BackgroundColor="{StaticResource White}">
+
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Back button -->
+                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" 
+                                StrokeThickness="0" BackgroundColor="{StaticResource Gray100}"
+                                HorizontalOptions="Start">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="20"/>
+                            </Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding BackCommand}"/>
+                            </Border.GestureRecognizers>
+                            <Label Text="←" TextColor="{StaticResource MidnightBlue}" FontSize="20"
+                                   HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+
+                        <Label Grid.Column="1" Text="My Favorites"
+                               FontSize="22" FontAttributes="Bold"
+                               TextColor="{StaticResource MidnightBlue}" 
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+
+                        <Border Grid.Column="2" WidthRequest="40" HeightRequest="40" 
+                                StrokeThickness="0" BackgroundColor="Transparent"
+                                HorizontalOptions="End"/>
+                    </Grid>
+
+                    <!-- Search bar -->
+                    <Border
+                        StrokeThickness="0"
+                        BackgroundColor="{StaticResource Gray100}">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="14"/>
+                        </Border.StrokeShape>
+                        <Grid ColumnDefinitions="Auto,*,Auto" Padding="12,0">
+
+                            <Image
+                                Grid.Column="0"
+                                Source="search.png"
+                                WidthRequest="18"
+                                HeightRequest="18"
+                                VerticalOptions="Center"
+                                Margin="0,0,8,0"/>
+
+                            <Entry
+                                Grid.Column="1"
+                                Placeholder="Search in favorites..."
+                                PlaceholderColor="{StaticResource Gray400}"
+                                TextColor="{StaticResource MidnightBlue}"
+                                BackgroundColor="Transparent"
+                                FontSize="14"
+                                HeightRequest="44"
+                                Text="{Binding SearchQuery}"
+                                ReturnCommand="{Binding SearchCommand}"/>
+
+                            <Image
+                                Grid.Column="2"
+                                Source="close.png"
+                                WidthRequest="16"
+                                HeightRequest="16"
+                                VerticalOptions="Center"
+                                Margin="8,0,0,0"
+                                IsVisible="{Binding HasSearchQuery}">
+                                <Image.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ClearSearchCommand}"/>
+                                </Image.GestureRecognizers>
+                            </Image>
+
+                        </Grid>
+                    </Border>
+
+                </VerticalStackLayout>
+
+                <!-- ═══ FAVORITES COUNT ═══ -->
+                <Label
+                    Text="{Binding FavoritesCountText}"
+                    Margin="20,20,20,12"
+                    FontSize="13"
+                    TextColor="{StaticResource Gray500}"/>
+
+                <!-- ═══ EMPTY STATE ═══ -->
+                <VerticalStackLayout
+                    IsVisible="{Binding IsEmpty}"
+                    Spacing="20"
+                    Padding="40"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center">
+
+                    <Image
+                        Source="heart_empty.png"
+                        WidthRequest="80"
+                        HeightRequest="80"
+                        HorizontalOptions="Center"/>
+
+                    <Label
+                        Text="No favorites yet"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource MidnightBlue}"
+                        HorizontalOptions="Center"/>
+
+                    <Label
+                        Text="Recipes you mark as favorite will appear here"
+                        FontSize="13"
+                        TextColor="{StaticResource Gray400}"
+                        HorizontalOptions="Center"/>
+
+                    <Border
+                        Margin="0,20,0,0"
+                        StrokeThickness="0"
+                        BackgroundColor="{StaticResource Primary}"
+                        Padding="20,12">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding BrowseRecipesCommand}"/>
+                        </Border.GestureRecognizers>
+                        <Label
+                            Text="Browse recipes"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            TextColor="White"
+                            HorizontalOptions="Center"/>
+                    </Border>
+
+                </VerticalStackLayout>
+
+                <!-- ═══ FAVORITE RECIPES LIST ═══ -->
+                <CollectionView
+                    IsVisible="{Binding IsNotEmpty}"
+                    ItemsSource="{Binding FilteredFavorites}"
+                    Margin="16,0,16,24"
+                    SelectionMode="None">
+
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="14"/>
+                    </CollectionView.ItemsLayout>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="model:Recipe">
+
+                            <Border StrokeThickness="0" Padding="0">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="24"/>
+                                </Border.StrokeShape>
+                                <Border.Shadow>
+                                    <Shadow
+                                        Brush="#22000000"
+                                        Offset="0,6"
+                                        Radius="20"
+                                        Opacity="0.18"/>
+                                </Border.Shadow>
+
+                                <Grid RowDefinitions="200,Auto">
+
+                                    <!-- PHOTO -->
+                                    <Grid Grid.Row="0">
+                                        <Image
+                                            Source="{Binding ImageUrl}"
+                                            Aspect="AspectFill"
+                                            HeightRequest="200"/>
+
+                                        <!-- Rating badge -->
+                                        <Border
+                                            HorizontalOptions="End"
+                                            VerticalOptions="Start"
+                                            Margin="0,12,12,0"
+                                            StrokeThickness="0.5"
+                                            Stroke="#55FFFFFF"
+                                            BackgroundColor="#44FFFFFF"
+                                            Padding="8,4">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="12"/>
+                                            </Border.StrokeShape>
+                                            <Label
+                                                Text="{Binding RatingText}"
+                                                TextColor="White"
+                                                FontSize="11"
+                                                FontAttributes="Bold"/>
+                                        </Border>
+
+                                        <!-- Remove favorite button -->
+                                        <Border
+                                            HorizontalOptions="Start"
+                                            VerticalOptions="Start"
+                                            Margin="12,12,0,0"
+                                            WidthRequest="36"
+                                            HeightRequest="36"
+                                            StrokeThickness="0"
+                                            BackgroundColor="#44FFFFFF">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="18"/>
+                                            </Border.StrokeShape>
+                                            <Image
+                                                Source="heart_filled.png"
+                                                Aspect="AspectFit"
+                                                Margin="8"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center">
+                                                <Image.GestureRecognizers>
+                                                    <TapGestureRecognizer
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:FavoritesViewModel}}, Path=RemoveFavoriteCommand}"
+                                                        CommandParameter="{Binding .}"/>
+                                                </Image.GestureRecognizers>
+                                            </Image>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- FROSTED BODY -->
+                                    <VerticalStackLayout
+                                        Grid.Row="1"
+                                        Spacing="10"
+                                        Padding="16,14,16,16"
+                                        BackgroundColor="{Binding AccentColor}">
+
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Label
+                                                Grid.Column="0"
+                                                Text="{Binding Title}"
+                                                TextColor="White"
+                                                FontSize="18"
+                                                FontAttributes="Bold"
+                                                VerticalOptions="Center"
+                                                LineBreakMode="TailTruncation"
+                                                MaxLines="1"/>
+                                            <Border
+                                                Grid.Column="1"
+                                                StrokeThickness="0"
+                                                BackgroundColor="#33000000"
+                                                Padding="10,5"
+                                                VerticalOptions="Center">
+                                                <Border.StrokeShape>
+                                                    <RoundRectangle CornerRadius="14"/>
+                                                </Border.StrokeShape>
+                                                <Label
+                                                    Text="{Binding CookTimeMinutes, StringFormat='⏱ {0} min'}"
+                                                    TextColor="White"
+                                                    FontSize="11"/>
+                                            </Border>
+                                        </Grid>
+
+                                        <Label
+                                            Text="{Binding ShortDescription}"
+                                            TextColor="#CCFFFFFF"
+                                            FontSize="13"
+                                            LineHeight="1.5"
+                                            MaxLines="2"
+                                            LineBreakMode="TailTruncation"/>
+
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Border
+                                                StrokeThickness="1"
+                                                Stroke="#55FFFFFF"
+                                                BackgroundColor="Transparent"
+                                                Padding="10,5">
+                                                <Border.StrokeShape>
+                                                    <RoundRectangle CornerRadius="12"/>
+                                                </Border.StrokeShape>
+                                                <Label Text="{Binding Category}" TextColor="White" FontSize="11"/>
+                                            </Border>
+                                            <Border
+                                                StrokeThickness="1"
+                                                Stroke="#55FFFFFF"
+                                                BackgroundColor="Transparent"
+                                                Padding="10,5">
+                                                <Border.StrokeShape>
+                                                    <RoundRectangle CornerRadius="12"/>
+                                                </Border.StrokeShape>
+                                                <Label Text="{Binding DifficultyLabel}" TextColor="White" FontSize="11"/>
+                                            </Border>
+                                            <Border
+                                                StrokeThickness="1"
+                                                Stroke="#55FFFFFF"
+                                                BackgroundColor="Transparent"
+                                                Padding="10,5">
+                                                <Border.StrokeShape>
+                                                    <RoundRectangle CornerRadius="12"/>
+                                                </Border.StrokeShape>
+                                                <Label Text="{Binding ServingsLabel}" TextColor="White" FontSize="11"/>
+                                            </Border>
+                                        </HorizontalStackLayout>
+
+                                        <Border
+                                            StrokeThickness="0"
+                                            BackgroundColor="White"
+                                            Padding="0,13">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="18"/>
+                                            </Border.StrokeShape>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:FavoritesViewModel}}, Path=ViewRecipeCommand}"
+                                                    CommandParameter="{Binding .}"/>
+                                            </Border.GestureRecognizers>
+                                            <Label
+                                                Text="View recipe"
+                                                HorizontalOptions="Center"
+                                                FontSize="15"
+                                                FontAttributes="Bold"
+                                                TextColor="{Binding AccentTextColor}"/>
+                                        </Border>
+
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

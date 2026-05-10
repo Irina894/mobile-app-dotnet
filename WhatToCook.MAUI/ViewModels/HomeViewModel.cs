@@ -5,7 +5,6 @@ using System.Windows.Input;
 using WhatToCook.MAUI.Models;
 using WhatToCook.MAUI.Services.Interfaces;
 
-// Alias вирішує конфлікт: де б не було namespace "Recipe" — ми явно кажемо що це клас з Models
 using RecipeModel = WhatToCook.MAUI.Models.Recipe;
 
 namespace WhatToCook.MAUI.ViewModels;
@@ -55,13 +54,24 @@ public class HomeViewModel : INotifyPropertyChanged
 
         ToggleFavoriteCommand = new Command<RecipeModel>(async (recipe) =>
         {
+            if (recipe == null) return;
             recipe.IsFavorite = !recipe.IsFavorite;
             await _recipeApiService.UpdateAsync(recipe);
         });
 
-        ViewRecipeCommand = new Command<RecipeModel>(recipe => { /* Навігація */ });
-        SeeAllIngredientsCommand = new Command(() => { /* Навігація */ });
-        SelectIngredientCommand = new Command<IngredientItem>(ingredient => SearchQuery = ingredient.Name);
+        // ── НАВІГАЦІЯ НА ДЕТАЛЬНУ СТОРІНКУ ───────────────────────────────
+        // Передаємо id рецепта через Shell QueryProperty
+        ViewRecipeCommand = new Command<RecipeModel>(async (recipe) =>
+        {
+            if (recipe == null) return;
+            await Shell.Current.GoToAsync($"recipedetail?id={recipe.Id}");
+        });
+
+        SeeAllIngredientsCommand = new Command(() => { /* TODO: навігація */ });
+        SelectIngredientCommand = new Command<IngredientItem>(ingredient =>
+        {
+            if (ingredient != null) SearchQuery = ingredient.Name;
+        });
 
         _ = LoadDataAsync();
     }
@@ -79,9 +89,8 @@ public class HomeViewModel : INotifyPropertyChanged
             {
                 Ingredients.Clear();
                 foreach (var item in ingredients)
-                {
                     Ingredients.Add(item);
-                }
+
                 ApplySearch();
             });
         }

@@ -1,6 +1,6 @@
-using WhatToCook.MAUI.ViewModels.Recipes; // ← "Recipes" з "s" — відповідає namespace у ViewModel
+using WhatToCook.MAUI.ViewModels.Recipes;
 
-namespace WhatToCook.MAUI.Views;
+namespace WhatToCook.MAUI.Views.Recipe;  // ← namespace з папкою Recipe
 
 public partial class RecipeListPage : ContentPage
 {
@@ -18,8 +18,6 @@ public partial class RecipeListPage : ContentPage
         base.OnAppearing();
 
         if (_viewModel.LoadRecipesCommand.CanExecute(null))
-        {
             _viewModel.LoadRecipesCommand.Execute(null);
-        }
     }
 }

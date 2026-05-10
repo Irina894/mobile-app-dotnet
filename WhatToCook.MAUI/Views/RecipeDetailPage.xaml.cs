@@ -2,9 +2,9 @@ using WhatToCook.MAUI.ViewModels;
 
 namespace WhatToCook.MAUI.Views;
 
-public partial class AddRecipePage : ContentPage
+public partial class RecipeDetailPage : ContentPage
 {
-    public AddRecipePage(AddRecipeViewModel viewModel)
+    public RecipeDetailPage(RecipeDetailViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;

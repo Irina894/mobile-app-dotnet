@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:WhatToCook.MAUI.ViewModels.Recipes"
              xmlns:model="clr-namespace:WhatToCook.MAUI.Models"
-             x:Class="WhatToCook.MAUI.Views.RecipeListPage"
+             x:Class="WhatToCook.MAUI.Views.Recipe.RecipeListPage"
              x:DataType="vm:RecipeListViewModel"
              Title="Recipes">
 
@@ -12,30 +12,30 @@
                            IsRunning="{Binding IsBusy}"
                            IsVisible="{Binding IsBusy}"
                            HorizontalOptions="Center"
-                           VerticalOptions="Center" />
+                           VerticalOptions="Center"
+                           Color="{StaticResource Primary}"/>
 
         <CollectionView Grid.Row="1"
-                        ItemsSource="{Binding Recipes}">
+                        ItemsSource="{Binding Recipes}"
+                        SelectionMode="None">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="model:Recipe">
-                    <Frame Margin="0,8"
-                           Padding="12"
-                           BorderColor="LightGray">
+                    <Frame Margin="0,8" Padding="12" BorderColor="LightGray">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="{Binding Title}"
-                                   FontSize="18"
-                                   FontAttributes="Bold" />
-
+                                   FontSize="18" FontAttributes="Bold"
+                                   TextColor="{StaticResource MidnightBlue}"/>
                             <Label Text="{Binding Description}"
                                    FontSize="14"
                                    LineBreakMode="TailTruncation"
-                                   MaxLines="2" />
-
-                            <Label Text="{Binding CookTimeMinutes, StringFormat='Час: {0} хв'}"
-                                   FontSize="12" />
-
-                            <Label Text="{Binding Category, StringFormat='Категорія: {0}'}"
-                                   FontSize="12" />
+                                   MaxLines="2"
+                                   TextColor="{StaticResource Gray500}"/>
+                            <Label Text="{Binding CookTimeMinutes, StringFormat='⏱ {0} min'}"
+                                   FontSize="12"
+                                   TextColor="{StaticResource Gray400}"/>
+                            <Label Text="{Binding Category, StringFormat='📂 {0}'}"
+                                   FontSize="12"
+                                   TextColor="{StaticResource Gray400}"/>
                         </VerticalStackLayout>
                     </Frame>
                 </DataTemplate>

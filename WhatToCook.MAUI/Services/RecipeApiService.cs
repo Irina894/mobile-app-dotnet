@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Diagnostics;
 using WhatToCook.MAUI.Models;
 using WhatToCook.MAUI.Services.Interfaces;
+using WhatToCook.MAUI.ViewModels; // для RecipeDetailModel
 
 namespace WhatToCook.MAUI.Services;
 
@@ -14,31 +15,25 @@ public class RecipeApiService : IRecipeApiService
         _httpClient = httpClient;
     }
 
-    // ── Отримання всіх рецептів ────────────────────────────────────────────
+    // ── Всі рецепти ───────────────────────────────────────────────────────
     public async Task<IEnumerable<Recipe>> GetAllAsync()
     {
         try
         {
             var response = await _httpClient.GetAsync("api/recipes");
-
             if (response.IsSuccessStatusCode)
-            {
-                var recipes = await response.Content.ReadFromJsonAsync<List<Recipe>>();
-                return recipes ?? new List<Recipe>();
-            }
-
-            var error = await response.Content.ReadAsStringAsync();
-            Debug.WriteLine($"API Error GetAll: {response.StatusCode} — {error}");
+                return await response.Content.ReadFromJsonAsync<List<Recipe>>() ?? new();
+            Debug.WriteLine($"API Error GetAll: {response.StatusCode}");
             return new List<Recipe>();
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Exception in GetAllAsync: {ex.Message}");
+            Debug.WriteLine($"Exception GetAllAsync: {ex.Message}");
             return new List<Recipe>();
         }
     }
 
-    // ── Отримання одного рецепта ───────────────────────────────────────────
+    // ── Один рецепт (базова модель, без інгредієнтів) ─────────────────────
     public async Task<Recipe?> GetByIdAsync(int id)
     {
         try
@@ -47,52 +42,72 @@ public class RecipeApiService : IRecipeApiService
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Exception in GetByIdAsync: {ex.Message}");
+            Debug.WriteLine($"Exception GetByIdAsync: {ex.Message}");
             return null;
         }
     }
 
-    // ── Створення нового рецепта ───────────────────────────────────────────
-    // Надсилаємо анонімний об'єкт що відповідає CreateRecipeDto на сервері
-    // Це безпечніше ніж надсилати всю MAUI модель з [JsonIgnore] полями
-    public async Task<Recipe?> CreateAsync(Recipe recipe)
+    // ── Один рецепт З інгредієнтами (для деталей) ─────────────────────────
+    // Той самий endpoint api/recipes/{id} — але десеріалізуємо в RecipeDetailModel
+    // що має поле Ingredients[]
+    public async Task<RecipeDetailModel?> GetByIdWithIngredientsAsync(int id)
     {
         try
         {
-            // Формуємо об'єкт що точно відповідає CreateRecipeDto на API
-            var payload = new
-            {
-                title = recipe.Title,
-                description = recipe.Description,
-                cookTimeMinutes = recipe.CookTimeMinutes,
-                category = recipe.Category,
-                difficulty = recipe.Difficulty,
-                servings = recipe.Servings,
-                imageUrl = recipe.ImageUrl,
-                accentColor = recipe.AccentColor,
-                accentTextColor = recipe.AccentTextColor,
-                isMyRecipe = recipe.IsMyRecipe
-            };
-
-            var response = await _httpClient.PostAsJsonAsync("api/recipes", payload);
-
+            var response = await _httpClient.GetAsync($"api/recipes/{id}");
             if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<Recipe>();
-            }
+                return await response.Content.ReadFromJsonAsync<RecipeDetailModel>();
 
-            var error = await response.Content.ReadAsStringAsync();
-            Debug.WriteLine($"Create API Error: {response.StatusCode} — {error}");
+            Debug.WriteLine($"API Error GetByIdWithIngredients: {response.StatusCode}");
             return null;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Exception in CreateAsync: {ex.Message}");
+            Debug.WriteLine($"Exception GetByIdWithIngredientsAsync: {ex.Message}");
             return null;
         }
     }
 
-    // ── Оновлення рецепта ──────────────────────────────────────────────────
+    // ── Створення (без інгредієнтів, для сумісності) ──────────────────────
+    public async Task<Recipe?> CreateAsync(Recipe recipe)
+    {
+        return await CreateWithIngredientsAsync(new
+        {
+            title = recipe.Title,
+            description = recipe.Description,
+            cookTimeMinutes = recipe.CookTimeMinutes,
+            category = recipe.Category,
+            difficulty = recipe.Difficulty,
+            servings = recipe.Servings,
+            imageUrl = recipe.ImageUrl,
+            accentColor = recipe.AccentColor,
+            accentTextColor = recipe.AccentTextColor,
+            isMyRecipe = recipe.IsMyRecipe,
+            ingredientIds = new List<int>()
+        });
+    }
+
+    // ── Створення З інгредієнтами ─────────────────────────────────────────
+    public async Task<Recipe?> CreateWithIngredientsAsync(object payload)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/recipes", payload);
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadFromJsonAsync<Recipe>();
+
+            var error = await response.Content.ReadAsStringAsync();
+            Debug.WriteLine($"Create Error: {response.StatusCode} — {error}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Exception CreateWithIngredientsAsync: {ex.Message}");
+            return null;
+        }
+    }
+
+    // ── Оновлення ─────────────────────────────────────────────────────────
     public async Task<bool> UpdateAsync(Recipe recipe)
     {
         try
@@ -110,18 +125,17 @@ public class RecipeApiService : IRecipeApiService
                 accentTextColor = recipe.AccentTextColor,
                 isMyRecipe = recipe.IsMyRecipe
             };
-
             var response = await _httpClient.PutAsJsonAsync($"api/recipes/{recipe.Id}", payload);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Exception in UpdateAsync: {ex.Message}");
+            Debug.WriteLine($"Exception UpdateAsync: {ex.Message}");
             return false;
         }
     }
 
-    // ── Видалення рецепта ──────────────────────────────────────────────────
+    // ── Видалення ─────────────────────────────────────────────────────────
     public async Task<bool> DeleteAsync(int id)
     {
         try
@@ -131,27 +145,24 @@ public class RecipeApiService : IRecipeApiService
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Exception in DeleteAsync: {ex.Message}");
+            Debug.WriteLine($"Exception DeleteAsync: {ex.Message}");
             return false;
         }
     }
 
-    // ── Отримання інгредієнтів ─────────────────────────────────────────────
+    // ── Всі інгредієнти ───────────────────────────────────────────────────
     public async Task<IEnumerable<IngredientItem>> GetAllIngredientsAsync()
     {
         try
         {
             var response = await _httpClient.GetAsync("api/ingredients");
             if (response.IsSuccessStatusCode)
-            {
-                var ingredients = await response.Content.ReadFromJsonAsync<List<IngredientItem>>();
-                return ingredients ?? new List<IngredientItem>();
-            }
+                return await response.Content.ReadFromJsonAsync<List<IngredientItem>>() ?? new();
             return new List<IngredientItem>();
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Exception in GetAllIngredientsAsync: {ex.Message}");
+            Debug.WriteLine($"Exception GetAllIngredientsAsync: {ex.Message}");
             return new List<IngredientItem>();
         }
     }

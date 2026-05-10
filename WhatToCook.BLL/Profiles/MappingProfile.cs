@@ -10,14 +10,15 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        // ── 1. Рецепти ────────────────────────────────────────────────────
-
-        // Entity → DTO: CookingTime (БД) → CookTimeMinutes (API відповідь / MAUI)
+        // ── 1. Recipe Entity → RecipeDto ──────────────────────────────────
         CreateMap<Recipe, RecipeDto>()
             .ForMember(dest => dest.CookTimeMinutes,
-                       opt => opt.MapFrom(src => src.CookingTime));
+                       opt => opt.MapFrom(src => src.CookingTime))
+            // Маппінг RecipeIngredient → RecipeIngredientDto
+            .ForMember(dest => dest.Ingredients,
+                       opt => opt.MapFrom(src => src.RecipeIngredients));
 
-        // CreateRecipeDto → Entity: CookTimeMinutes (з форми) → CookingTime (БД)
+        // ── 2. CreateRecipeDto → Recipe Entity ────────────────────────────
         CreateMap<CreateRecipeDto, Recipe>()
             .ForMember(dest => dest.CookingTime,
                        opt => opt.MapFrom(src => src.CookTimeMinutes))
@@ -26,7 +27,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.RecipeIngredients, opt => opt.Ignore())
             .ForMember(dest => dest.FavoriteRecipes, opt => opt.Ignore());
 
-        // UpdateRecipeDto → Entity: аналогічно
+        // ── 3. UpdateRecipeDto → Recipe Entity ────────────────────────────
         CreateMap<UpdateRecipeDto, Recipe>()
             .ForMember(dest => dest.CookingTime,
                        opt => opt.MapFrom(src => src.CookTimeMinutes))
@@ -35,34 +36,33 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.RecipeIngredients, opt => opt.Ignore())
             .ForMember(dest => dest.FavoriteRecipes, opt => opt.Ignore());
 
-        // ── 2. Користувачі ────────────────────────────────────────────────
+        // ── 4. RecipeIngredient → RecipeIngredientDto ─────────────────────
+        CreateMap<RecipeIngredient, RecipeIngredientDto>()
+            .ForMember(dest => dest.IngredientName,
+                       opt => opt.MapFrom(src => src.Ingredient != null
+                           ? src.Ingredient.Name : "Unknown"))
+            .ForMember(dest => dest.ImageUrl,
+                       opt => opt.MapFrom(src => src.Ingredient != null
+                           ? src.Ingredient.ImageUrl : null));
+
+        // ── 5. Користувачі ────────────────────────────────────────────────
         CreateMap<User, UserDto>().ReverseMap();
         CreateMap<RegisterUserDto, User>()
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore());
 
-        // ── 3. Інгредієнти (Довідник) ─────────────────────────────────────
+        // ── 6. Інгредієнти ────────────────────────────────────────────────
         CreateMap<Ingredient, IngredientDto>().ReverseMap();
         CreateMap<CreateIngredientDto, Ingredient>();
         CreateMap<UpdateIngredientDto, Ingredient>();
 
-        // ── 4. Склад рецепта (RecipeIngredient) ───────────────────────────
-        CreateMap<RecipeIngredient, RecipeIngredientDto>()
-            .ForMember(dest => dest.IngredientName,
-                       opt => opt.MapFrom(src => src.Ingredient != null
-                           ? src.Ingredient.Name
-                           : "Невідомо"));
-
-        // ── 5. Обрані рецепти (Favorites) ─────────────────────────────────
+        // ── 7. Favorites ──────────────────────────────────────────────────
         CreateMap<FavoriteRecipe, FavoriteRecipeDto>()
             .ForMember(dest => dest.RecipeTitle,
                        opt => opt.MapFrom(src => src.Recipe != null
-                           ? src.Recipe.Title
-                           : "Рецепт видалено"))
+                           ? src.Recipe.Title : "Рецепт видалено"))
             .ForMember(dest => dest.RecipeImageUrl,
                        opt => opt.MapFrom(src => src.Recipe != null
-                           ? src.Recipe.ImageUrl
-                           : null));
-
+                           ? src.Recipe.ImageUrl : null));
         CreateMap<CreateFavoriteRecipeDto, FavoriteRecipe>();
     }
 }

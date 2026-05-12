@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Windows.Input;
 using WhatToCook.MAUI.Models;
+using WhatToCook.MAUI.Services;
 using WhatToCook.MAUI.Services.Interfaces;
 
 using RecipeModel = WhatToCook.MAUI.Models.Recipe;
@@ -31,7 +32,6 @@ public class RecipeIngredientDetail
     public string Unit { get; set; } = string.Empty;
 }
 
-// Розширює базову Recipe — додає список інгредієнтів що приходить з API
 public class RecipeDetailModel : RecipeModel
 {
     [JsonPropertyName("ingredients")]
@@ -45,14 +45,12 @@ public class RecipeStep
     public string NumberLabel => $"{Number}";
 }
 
-// ── ViewModel ─────────────────────────────────────────────────────────────
-
 [QueryProperty(nameof(RecipeId), "id")]
 public class RecipeDetailViewModel : INotifyPropertyChanged
 {
     private readonly IRecipeApiService _recipeApiService;
+    private readonly FavoritesStore _favoritesStore;
 
-    // Shell передає id через навігацію: GoToAsync("recipedetail?id=5")
     private int _recipeId;
     public int RecipeId
     {
@@ -72,9 +70,7 @@ public class RecipeDetailViewModel : INotifyPropertyChanged
         set { _recipe = value; OnPropertyChanged(); }
     }
 
-    // Тільки інгредієнти ЦЬОГО рецепту — приходять з api/recipes/{id}
     public ObservableCollection<RecipeIngredientDetail> RecipeIngredients { get; } = new();
-
     public ObservableCollection<RecipeStep> Steps { get; } = new();
 
     private bool _isLoading = true;
@@ -102,17 +98,18 @@ public class RecipeDetailViewModel : INotifyPropertyChanged
     public ICommand ToggleFavoriteCommand { get; }
     public ICommand RetryCommand { get; }
 
-    public RecipeDetailViewModel(IRecipeApiService recipeApiService)
+    public RecipeDetailViewModel(IRecipeApiService recipeApiService, FavoritesStore favoritesStore)
     {
         _recipeApiService = recipeApiService;
+        _favoritesStore = favoritesStore;
 
         BackCommand = new Command(async () => await Shell.Current.GoToAsync(".."));
 
+        // ── ВИПРАВЛЕНО: тогл через FavoritesStore + IFavoriteApiService ───
         ToggleFavoriteCommand = new Command(async () =>
         {
             if (Recipe == null) return;
-            Recipe.IsFavorite = !Recipe.IsFavorite;
-            await _recipeApiService.UpdateAsync(Recipe);
+            await _favoritesStore.ToggleAsync(Recipe);
             OnPropertyChanged(nameof(Recipe));
         });
 
@@ -128,7 +125,6 @@ public class RecipeDetailViewModel : INotifyPropertyChanged
             IsLoading = true;
             HasError = false;
 
-            // Отримуємо розширену модель з інгредієнтами
             var detail = await _recipeApiService.GetByIdWithIngredientsAsync(id);
 
             if (detail == null)
@@ -137,17 +133,17 @@ public class RecipeDetailViewModel : INotifyPropertyChanged
                 return;
             }
 
-            // Базові поля рецепту
+            // Синхронізуємо прапорець IsFavorite з нашим локальним кешем
+            detail.IsFavorite = _favoritesStore.IsFavorite(detail.Id);
+
             Recipe = detail;
 
-            // Інгредієнти саме цього рецепту
             RecipeIngredients.Clear();
             foreach (var ingredient in detail.Ingredients)
                 RecipeIngredients.Add(ingredient);
 
             HasIngredients = RecipeIngredients.Count > 0;
 
-            // Покрокова інструкція
             GenerateSteps(detail);
         }
         catch (Exception ex)

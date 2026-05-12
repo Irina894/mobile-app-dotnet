@@ -16,4 +16,5 @@ public interface IRecipeApiService
 
     // Пошук рецептів за інгредієнтами та/або назвою
     Task<IEnumerable<Recipe>> SearchAsync(List<int> ingredientIds, string? query = null);
+    Task<string?> UploadImageAsync(Stream fileStream, string fileName);
 }

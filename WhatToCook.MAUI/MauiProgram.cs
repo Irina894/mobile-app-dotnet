@@ -13,9 +13,10 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
 
-        builder.UseMauiApp<App>().UseMauiCommunityToolkit(); // Обов'язково!
+        // ── ВИПРАВЛЕНО: один ланцюжок викликів, без дублювання UseMauiApp ──
         builder
             .UseMauiApp<App>()
+            .UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -28,9 +29,12 @@ public static class MauiProgram
             BaseAddress = new Uri("https://5q419q9m-7086.euw.devtunnels.ms/")
         });
 
-        // ── Сервіси ───────────────────────────────────────────────────────
+        // ── API-сервіси ───────────────────────────────────────────────────
         builder.Services.AddSingleton<IRecipeApiService, RecipeApiService>();
         builder.Services.AddSingleton<IFavoriteApiService, FavoriteApiService>();
+
+        // ── Центральне сховище улюблених (Singleton — один на весь застосунок) ──
+        builder.Services.AddSingleton<FavoritesStore>();
 
         // ── AppShell ──────────────────────────────────────────────────────
         builder.Services.AddSingleton<AppShell>();

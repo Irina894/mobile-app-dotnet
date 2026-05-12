@@ -52,14 +52,15 @@ public class Recipe : INotifyPropertyChanged
     [JsonPropertyName("isMyRecipe")]
     public bool IsMyRecipe { get; set; }
 
-
-    // === ЛОКАЛЬНІ ДАНІ ДЛЯ ІНТЕРФЕЙСУ (UI) ===
-    // Атрибут [JsonIgnore] каже: "НЕ відправляй ці поля на сервер при збереженні!"
-    // Це захищає нас від помилки збереження (Bad Request).
-
+    [JsonIgnore]
     private bool _isFavorite;
-    [JsonPropertyName("isFavorite")]
-    public bool IsFavorite { get => _isFavorite; set { _isFavorite = value; OnPropertyChanged(); OnPropertyChanged(nameof(FavoriteIcon)); } }
+
+    [JsonIgnore]
+    public bool IsFavorite
+    {
+        get => _isFavorite;
+        set { _isFavorite = value; OnPropertyChanged(); OnPropertyChanged(nameof(FavoriteIcon)); }
+    }
 
     [JsonIgnore]
     public string RatingText => Rating > 0 ? $"⭐ {Rating:F1}" : "New";

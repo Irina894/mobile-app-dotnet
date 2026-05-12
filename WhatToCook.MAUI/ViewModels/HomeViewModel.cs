@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using WhatToCook.MAUI.Models;
+using WhatToCook.MAUI.Services;
 using WhatToCook.MAUI.Services.Interfaces;
 using RecipeModel = WhatToCook.MAUI.Models.Recipe;
 
@@ -12,6 +13,7 @@ namespace WhatToCook.MAUI.ViewModels;
 public class HomeViewModel : INotifyPropertyChanged
 {
     private readonly IRecipeApiService _recipeApiService;
+    private readonly FavoritesStore _favoritesStore;
 
     // ── Рецепти (результат поточного запиту) ──────────────────────────────
     public ObservableCollection<RecipeModel> Recipes { get; } = new();
@@ -57,7 +59,6 @@ public class HomeViewModel : INotifyPropertyChanged
         set { _hasActiveFilters = value; OnPropertyChanged(); }
     }
 
-    // Заголовок секції рецептів — змінюється залежно від того, чи є фільтри
     public string RecipesSectionTitle => HasActiveFilters
         ? "Search results"
         : "Popular recipes";
@@ -76,9 +77,14 @@ public class HomeViewModel : INotifyPropertyChanged
     public ICommand ToggleFavoriteCommand { get; }
     public ICommand ViewRecipeCommand { get; }
 
-    public HomeViewModel(IRecipeApiService recipeApiService)
+    public HomeViewModel(IRecipeApiService recipeApiService, FavoritesStore favoritesStore)
     {
         _recipeApiService = recipeApiService;
+        _favoritesStore = favoritesStore;
+
+        // Підписка на зміну у Store — щоб серце оновилось, коли користувач
+        // видалив рецепт з FavoritesPage (треба синхронізувати з рецептами на HomePage).
+        _favoritesStore.FavoritesChanged += OnFavoritesStoreChanged;
 
         SearchCommand = new Command(async () => await ApplySearchAsync());
         ClearSearchCommand = new Command(() => SearchQuery = string.Empty);
@@ -87,12 +93,11 @@ public class HomeViewModel : INotifyPropertyChanged
         ToggleIngredientCommand = new Command<IngredientItem>(
             async i => await OnToggleIngredientAsync(i));
 
+        // ── ВИПРАВЛЕНО: тепер через FavoritesStore і IFavoriteApiService ──
         ToggleFavoriteCommand = new Command<RecipeModel>(async recipe =>
         {
             if (recipe == null) return;
-            recipe.IsFavorite = !recipe.IsFavorite;
-            await _recipeApiService.UpdateAsync(recipe);
-            // TODO: коли підключите FavoriteApiService — викликати тут Toggle
+            await _favoritesStore.ToggleAsync(recipe);
         });
 
         ViewRecipeCommand = new Command<RecipeModel>(async recipe =>
@@ -104,23 +109,37 @@ public class HomeViewModel : INotifyPropertyChanged
         _ = InitAsync();
     }
 
-    // ── Ініціалізація ─────────────────────────────────────────────────────
+    /// <summary>
+    /// Викликається з HomePage.OnAppearing — щоб новий рецепт,
+    /// створений на AddRecipePage, одразу з'явився у списку.
+    /// </summary>
+    public async Task ReloadAsync()
+    {
+        await ApplySearchAsync();
+    }
+
     private async Task InitAsync()
     {
         try
         {
             IsBusy = true;
 
+            // Підтягуємо актуальний список улюблених, щоб серця були заповнені при старті
+            await _favoritesStore.EnsureInitializedAsync();
+
             var ingredientsTask = _recipeApiService.GetAllIngredientsAsync();
             var recipesTask = _recipeApiService.GetAllAsync();
 
             await Task.WhenAll(ingredientsTask, recipesTask);
 
+            var recipes = (await recipesTask).ToList();
+            _favoritesStore.ApplyFavoriteFlags(recipes);
+
             Ingredients.Clear();
             foreach (var ing in await ingredientsTask) Ingredients.Add(ing);
 
             Recipes.Clear();
-            foreach (var r in await recipesTask) Recipes.Add(r);
+            foreach (var r in recipes) Recipes.Add(r);
 
             IsEmpty = !Recipes.Any();
         }
@@ -134,7 +153,6 @@ public class HomeViewModel : INotifyPropertyChanged
         }
     }
 
-    // ── Тогл чіпса інгредієнта ───────────────────────────────────────────
     private async Task OnToggleIngredientAsync(IngredientItem? ingredient)
     {
         if (ingredient == null) return;
@@ -148,7 +166,6 @@ public class HomeViewModel : INotifyPropertyChanged
         await ApplySearchAsync();
     }
 
-    // ── Застосування пошуку (текст + інгредієнти, серверний) ─────────────
     private async Task ApplySearchAsync()
     {
         var selectedIds = Ingredients
@@ -169,8 +186,11 @@ public class HomeViewModel : INotifyPropertyChanged
             else
                 results = await _recipeApiService.SearchAsync(selectedIds, _searchQuery);
 
+            var list = results.ToList();
+            _favoritesStore.ApplyFavoriteFlags(list);
+
             Recipes.Clear();
-            foreach (var r in results) Recipes.Add(r);
+            foreach (var r in list) Recipes.Add(r);
 
             IsEmpty = !Recipes.Any();
         }
@@ -184,7 +204,6 @@ public class HomeViewModel : INotifyPropertyChanged
         }
     }
 
-    // ── Очистити всі фільтри ─────────────────────────────────────────────
     private async Task ClearFiltersAsync()
     {
         foreach (var ing in Ingredients) ing.IsSelected = false;
@@ -201,7 +220,9 @@ public class HomeViewModel : INotifyPropertyChanged
         try
         {
             IsBusy = true;
-            var all = await _recipeApiService.GetAllAsync();
+            var all = (await _recipeApiService.GetAllAsync()).ToList();
+            _favoritesStore.ApplyFavoriteFlags(all);
+
             Recipes.Clear();
             foreach (var r in all) Recipes.Add(r);
             IsEmpty = !Recipes.Any();
@@ -214,6 +235,14 @@ public class HomeViewModel : INotifyPropertyChanged
         {
             IsBusy = false;
         }
+    }
+
+    private void OnFavoritesStoreChanged(object? sender, EventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _favoritesStore.ApplyFavoriteFlags(Recipes);
+        });
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

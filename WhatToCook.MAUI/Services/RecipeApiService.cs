@@ -158,4 +158,34 @@ public class RecipeApiService : IRecipeApiService
         }
         catch (Exception ex) { Debug.WriteLine($"Exception GetAllIngredientsAsync: {ex.Message}"); return new List<IngredientItem>(); }
     }
+
+    public async Task<string?> UploadImageAsync(Stream fileStream, string fileName)
+    {
+        try
+        {
+            using var content = new MultipartFormDataContent();
+
+            // Створюємо контент файлу
+            var streamContent = new StreamContent(fileStream);
+            streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+
+            // Додаємо файл у форму. "file" має збігатися з назвою параметра в ImageController (IFormFile file)
+            content.Add(streamContent, "file", fileName);
+
+            var response = await _httpClient.PostAsync("api/image/upload", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var resultString = await response.Content.ReadAsStringAsync();
+                var jsonNode = System.Text.Json.Nodes.JsonNode.Parse(resultString);
+                return jsonNode?["url"]?.ToString();
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Upload image error: {ex.Message}");
+            return null;
+        }
+    }
 }

@@ -191,8 +191,35 @@ public class AddRecipeViewModel : INotifyPropertyChanged
 
     private async void OnPickImage()
     {
-        await Shell.Current.DisplayAlert("Coming Soon",
-            "Image picker will be implemented with proper permissions", "OK");
+        try
+        {
+            var result = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
+            {
+                Title = "Please select a recipe photo"
+            });
+
+            if (result != null)
+            {
+                using var stream = await result.OpenReadAsync();
+
+                // 3. Відправляємо на сервер
+                var uploadedUrl = await _recipeApiService.UploadImageAsync(stream, result.FileName);
+
+                if (!string.IsNullOrEmpty(uploadedUrl))
+                {
+                    ImageUrl = uploadedUrl;
+                    ImagePreview = uploadedUrl;
+                }
+                else
+                {
+                    await Shell.Current.DisplayAlert("Error", "Failed to upload image to server.", "OK");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Error", $"Error picking image: {ex.Message}", "OK");
+        }
     }
 
     private void UpdateAccentColors()

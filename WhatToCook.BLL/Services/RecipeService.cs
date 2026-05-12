@@ -12,32 +12,55 @@ public class RecipeService : IRecipeService
 {
     private readonly IRepository<Recipe> _recipeRepository;
     private readonly IRepository<RecipeIngredient> _recipeIngredientRepository;
-    private readonly AppDbContext _context; // для Include запитів
+    private readonly AppDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IFavoriteService _favoriteService;
+
 
     public RecipeService(
         IRepository<Recipe> recipeRepository,
         IRepository<RecipeIngredient> recipeIngredientRepository,
         AppDbContext context,
-        IMapper mapper)
+        IMapper mapper,
+        IFavoriteService favoriteService)
     {
         _recipeRepository = recipeRepository;
         _recipeIngredientRepository = recipeIngredientRepository;
         _context = context;
         _mapper = mapper;
+        _favoriteService = favoriteService;
     }
 
-    // ── GET ALL — без Include (для списку швидко) ─────────────────────────
+    // ── GET ALL ───────────────────────────────────────────────────────────
     public async Task<IEnumerable<RecipeDto>> GetAllRecipesAsync()
     {
         var recipes = await _recipeRepository.GetAllAsync();
         return _mapper.Map<IEnumerable<RecipeDto>>(recipes);
     }
 
-    // ── GET BY ID — з Include інгредієнтів ───────────────────────────────
+    public async Task<IEnumerable<RecipeDto>> GetAllRecipesAsync(int userId)
+    {
+        var recipes = await _recipeRepository.GetAllAsync();
+        var dtos = _mapper.Map<List<RecipeDto>>(recipes);
+        var favIds = await _favoriteService.GetFavoriteRecipeIdsAsync(userId);
+        foreach (var dto in dtos)
+            dto.IsFavorite = favIds.Contains(dto.Id);
+        return dtos;
+    }
+
+    public async Task<IEnumerable<RecipeDto>> SearchRecipesAsync(
+        List<int> ingredientIds, string? query, int userId)
+    {
+        var dtos = (await SearchRecipesAsync(ingredientIds, query)).ToList();
+        var favIds = await _favoriteService.GetFavoriteRecipeIdsAsync(userId);
+        foreach (var dto in dtos)
+            dto.IsFavorite = favIds.Contains(dto.Id);
+        return dtos;
+    }
+
+    // ── GET BY ID з Include ───────────────────────────────────────────────
     public async Task<RecipeDto?> GetRecipeByIdAsync(int id)
     {
-        // Generic Repository не вміє Include — використовуємо DbContext напряму
         var recipe = await _context.Recipes
             .Include(r => r.RecipeIngredients)
                 .ThenInclude(ri => ri.Ingredient)
@@ -48,18 +71,51 @@ public class RecipeService : IRecipeService
         return _mapper.Map<RecipeDto>(recipe);
     }
 
-    // ── CREATE — зберігаємо рецепт + зв'язки з інгредієнтами ────────────
+    // ── SEARCH ────────────────────────────────────────────────────────────
+    // Широка фільтрація: рецепт показується якщо містить ХОЧА Б ОДИН
+    // з вибраних інгредієнтів. Додатково фільтрує за назвою якщо є query.
+    public async Task<IEnumerable<RecipeDto>> SearchRecipesAsync(
+        List<int> ingredientIds,
+        string? query)
+    {
+        // Починаємо з базового запиту з Include
+        var recipesQuery = _context.Recipes
+            .Include(r => r.RecipeIngredients)
+                .ThenInclude(ri => ri.Ingredient)
+            .AsNoTracking()
+            .AsQueryable();
+
+        // Фільтр за інгредієнтами (хоча б один збігається)
+        if (ingredientIds.Any())
+        {
+            recipesQuery = recipesQuery.Where(r =>
+                r.RecipeIngredients.Any(ri =>
+                    ingredientIds.Contains(ri.IngredientId)));
+        }
+
+        // Фільтр за назвою (необов'язковий)
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var q = query.ToLower();
+            recipesQuery = recipesQuery.Where(r =>
+                r.Title.ToLower().Contains(q) ||
+                r.Description.ToLower().Contains(q) ||
+                r.Category.ToLower().Contains(q));
+        }
+
+        var recipes = await recipesQuery.ToListAsync();
+        return _mapper.Map<IEnumerable<RecipeDto>>(recipes);
+    }
+
+    // ── CREATE ────────────────────────────────────────────────────────────
     public async Task<RecipeDto> CreateRecipeAsync(CreateRecipeDto dto)
     {
-        // 1. Маппінг і збереження рецепту через Generic Repository
         var recipeEntity = _mapper.Map<Recipe>(dto);
         recipeEntity.Rating = 0;
         recipeEntity.CreatedAt = DateTime.UtcNow;
 
         await _recipeRepository.AddAsync(recipeEntity);
-        // Після AddAsync entity вже має Id (EF Core заповнює його)
 
-        // 2. Якщо є вибрані інгредієнти — зберігаємо зв'язки
         if (dto.IngredientIds.Any())
         {
             foreach (var ingredientId in dto.IngredientIds)
@@ -74,7 +130,6 @@ public class RecipeService : IRecipeService
             }
         }
 
-        // 3. Повертаємо рецепт з інгредієнтами через DbContext
         var withIngredients = await _context.Recipes
             .Include(r => r.RecipeIngredients)
                 .ThenInclude(ri => ri.Ingredient)

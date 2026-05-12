@@ -8,10 +8,7 @@
     Shell.NavBarIsVisible="False"
     BackgroundColor="{StaticResource Background}">
 
-    <ContentPage.BindingContext>
-        <vm:FavoritesViewModel/>
-    </ContentPage.BindingContext>
-
+    
     <Grid>
         <ScrollView>
             <VerticalStackLayout Spacing="0">
@@ -48,7 +45,7 @@
                                 HorizontalOptions="End"/>
                     </Grid>
 
-                    <!-- Search bar -->
+                    <!-- Search bar (тільки за назвою) -->
                     <Border
                         StrokeThickness="0"
                         BackgroundColor="{StaticResource Gray100}">
@@ -67,7 +64,7 @@
 
                             <Entry
                                 Grid.Column="1"
-                                Placeholder="Search in favorites..."
+                                Placeholder="Search by name..."
                                 PlaceholderColor="{StaticResource Gray400}"
                                 TextColor="{StaticResource MidnightBlue}"
                                 BackgroundColor="Transparent"
@@ -92,16 +89,113 @@
                         </Grid>
                     </Border>
 
+                    <!-- Filter by ingredients header -->
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                        <Label
+                            Grid.Column="0"
+                            Text="Filter by ingredients"
+                            FontSize="13"
+                            TextColor="{StaticResource Gray500}"
+                            VerticalOptions="Center"/>
+                        <Label
+                            Grid.Column="1"
+                            Text="Clear all"
+                            FontSize="13"
+                            FontAttributes="Bold"
+                            TextColor="{StaticResource Primary}"
+                            VerticalOptions="Center"
+                            IsVisible="{Binding HasActiveFilters}">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ClearFiltersCommand}"/>
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+
+                    <!-- Ingredients horizontal scroll (кружечки як на HomePage) -->
+                    <CollectionView
+                        ItemsSource="{Binding Ingredients}"
+                        HeightRequest="90"
+                        HorizontalScrollBarVisibility="Never">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="16"/>
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="model:IngredientItem">
+                                <VerticalStackLayout Spacing="6" WidthRequest="64">
+                                    <VerticalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:FavoritesViewModel}}, Path=ToggleIngredientCommand}"
+                                            CommandParameter="{Binding .}"/>
+                                    </VerticalStackLayout.GestureRecognizers>
+
+                                    <Border
+                                        WidthRequest="60"
+                                        HeightRequest="60"
+                                        StrokeThickness="0"
+                                        Stroke="{Binding SelectionBorderColor}"
+                                        HorizontalOptions="Center">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="30"/>
+                                        </Border.StrokeShape>
+                                        <Image
+                                            Source="{Binding ImageUrl}"
+                                            Aspect="AspectFill"
+                                            WidthRequest="60"
+                                            HeightRequest="60"/>
+                                    </Border>
+
+                                    <Label
+                                        Text="{Binding Name}"
+                                        FontSize="11"
+                                        TextColor="{Binding ChipTextColor}"
+                                        HorizontalOptions="Center"/>
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
                 </VerticalStackLayout>
 
-                <!-- ═══ FAVORITES COUNT ═══ -->
+                <!-- ═══ FILTER BADGE ═══ -->
+                <Border
+                    IsVisible="{Binding ShowFilterBadge}"
+                    Margin="16,12,16,0"
+                    StrokeThickness="0"
+                    BackgroundColor="#EFF6FF"
+                    Padding="12,8">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label
+                            Grid.Column="0"
+                            Text="{Binding FilterBadgeText, StringFormat='🎯 {0}'}"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="{StaticResource Primary}"
+                            VerticalOptions="Center"/>
+                        <Label
+                            Grid.Column="1"
+                            Text="Clear"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="{StaticResource Primary}"
+                            VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ClearFiltersCommand}"/>
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+                </Border>
+
+                <!-- ═══ FAVORITES COUNT / SECTION TITLE ═══ -->
                 <Label
-                    Text="{Binding FavoritesCountText}"
+                    Text="{Binding RecipesSectionTitle}"
                     Margin="20,20,20,12"
                     FontSize="13"
                     TextColor="{StaticResource Gray500}"/>
 
-                <!-- ═══ EMPTY STATE ═══ -->
+                <!-- ═══ EMPTY STATE: зовсім немає улюблених ═══ -->
                 <VerticalStackLayout
                     IsVisible="{Binding IsEmpty}"
                     Spacing="20"
@@ -141,6 +235,50 @@
                         </Border.GestureRecognizers>
                         <Label
                             Text="Browse recipes"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            TextColor="White"
+                            HorizontalOptions="Center"/>
+                    </Border>
+
+                </VerticalStackLayout>
+
+                <!-- ═══ EMPTY STATE: улюблені є, але фільтр нічого не дав ═══ -->
+                <VerticalStackLayout
+                    IsVisible="{Binding IsResultEmpty}"
+                    Spacing="12"
+                    Padding="40,20"
+                    HorizontalOptions="Center">
+
+                    <Label Text="🔍" FontSize="48" HorizontalOptions="Center"/>
+
+                    <Label
+                        Text="No matches found"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource MidnightBlue}"
+                        HorizontalOptions="Center"/>
+
+                    <Label
+                        Text="Try different ingredients or clear filters"
+                        FontSize="13"
+                        TextColor="{StaticResource Gray400}"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center"/>
+
+                    <Border
+                        Margin="0,8,0,0"
+                        StrokeThickness="0"
+                        BackgroundColor="{StaticResource Primary}"
+                        Padding="20,12">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="14"/>
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ClearFiltersCommand}"/>
+                        </Border.GestureRecognizers>
+                        <Label
+                            Text="Clear filters"
                             FontSize="14"
                             FontAttributes="Bold"
                             TextColor="White"

@@ -57,21 +57,15 @@ public class Recipe : INotifyPropertyChanged
     // Атрибут [JsonIgnore] каже: "НЕ відправляй ці поля на сервер при збереженні!"
     // Це захищає нас від помилки збереження (Bad Request).
 
-    [JsonIgnore]
     private bool _isFavorite;
-
-    [JsonIgnore]
-    public bool IsFavorite
-    {
-        get => _isFavorite;
-        set { _isFavorite = value; OnPropertyChanged(); OnPropertyChanged(nameof(FavoriteIcon)); }
-    }
+    [JsonPropertyName("isFavorite")]
+    public bool IsFavorite { get => _isFavorite; set { _isFavorite = value; OnPropertyChanged(); OnPropertyChanged(nameof(FavoriteIcon)); } }
 
     [JsonIgnore]
     public string RatingText => Rating > 0 ? $"⭐ {Rating:F1}" : "New";
 
     [JsonIgnore]
-    public string FavoriteIcon => IsFavorite ? "heart_filled.png" : "heart.svg";
+    public string FavoriteIcon => IsFavorite ? "heart_menu.png" : "heart.svg";
 
     [JsonIgnore]
     public string DifficultyLabel => Difficulty;

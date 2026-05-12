@@ -67,26 +67,29 @@
                     </Grid>
                 </Border>
 
-                <!-- Search by ingredients header -->
+                <!-- Search by ingredients header (з "Clear all" замість "See all") -->
                 <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
                     <Label
                         Grid.Column="0"
                         Text="Search by ingredients"
                         FontSize="13"
-                        TextColor="{StaticResource Gray500}"/>
+                        TextColor="{StaticResource Gray500}"
+                        VerticalOptions="Center"/>
                     <Label
                         Grid.Column="1"
-                        Text="See all"
+                        Text="Clear all"
                         FontSize="13"
                         FontAttributes="Bold"
-                        TextColor="{StaticResource Primary}">
+                        TextColor="{StaticResource Primary}"
+                        VerticalOptions="Center"
+                        IsVisible="{Binding HasActiveFilters}">
                         <Label.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding SeeAllIngredientsCommand}"/>
+                            <TapGestureRecognizer Command="{Binding ClearFiltersCommand}"/>
                         </Label.GestureRecognizers>
                     </Label>
                 </Grid>
 
-                <!-- Ingredients horizontal scroll -->
+                <!-- Ingredients horizontal scroll (тепер з підсвічуванням вибраних) -->
                 <CollectionView
                     ItemsSource="{Binding Ingredients}"
                     HeightRequest="90"
@@ -99,7 +102,7 @@
                             <VerticalStackLayout Spacing="6" WidthRequest="64">
                                 <VerticalStackLayout.GestureRecognizers>
                                     <TapGestureRecognizer
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=SelectIngredientCommand}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=ToggleIngredientCommand}"
                                         CommandParameter="{Binding .}"/>
                                 </VerticalStackLayout.GestureRecognizers>
 
@@ -107,6 +110,7 @@
                                     WidthRequest="60"
                                     HeightRequest="60"
                                     StrokeThickness="0"
+                                    Stroke="{Binding SelectionBorderColor}"
                                     HorizontalOptions="Center">
                                     <Border.StrokeShape>
                                         <RoundRectangle CornerRadius="30"/>
@@ -121,7 +125,7 @@
                                 <Label
                                     Text="{Binding Name}"
                                     FontSize="11"
-                                    TextColor="{StaticResource Gray600}"
+                                    TextColor="{Binding ChipTextColor}"
                                     HorizontalOptions="Center"/>
                             </VerticalStackLayout>
                         </DataTemplate>
@@ -130,16 +134,96 @@
 
             </VerticalStackLayout>
 
-            <!-- ═══ SECTION TITLE ═══ -->
+            <!-- ═══ FILTER BADGE (з'являється коли є вибрані інгредієнти) ═══ -->
+            <Border
+                IsVisible="{Binding ShowFilterBadge}"
+                Margin="16,12,16,0"
+                StrokeThickness="0"
+                BackgroundColor="#EFF6FF"
+                Padding="12,8">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label
+                        Grid.Column="0"
+                        Text="{Binding FilterBadgeText, StringFormat='🎯 {0}'}"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource Primary}"
+                        VerticalOptions="Center"/>
+                    <Label
+                        Grid.Column="1"
+                        Text="Clear"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource Primary}"
+                        VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ClearFiltersCommand}"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+            </Border>
+
+            <!-- ═══ SECTION TITLE (динамічний: "Popular recipes" / "Search results") ═══ -->
             <Label
-                Text="Popular recipes"
+                Text="{Binding RecipesSectionTitle}"
                 Margin="20,20,20,12"
                 FontSize="13"
                 TextColor="{StaticResource Gray500}"/>
 
+            <!-- ═══ LOADING INDICATOR ═══ -->
+            <ActivityIndicator
+                IsRunning="{Binding IsBusy}"
+                IsVisible="{Binding IsBusy}"
+                Color="{StaticResource Primary}"
+                Margin="0,20,0,0"
+                HorizontalOptions="Center"/>
+
+            <!-- ═══ EMPTY STATE ═══ -->
+            <VerticalStackLayout
+                IsVisible="{Binding IsEmpty}"
+                HorizontalOptions="Center"
+                Spacing="12"
+                Padding="40,20">
+                <Label Text="🥗" FontSize="48" HorizontalOptions="Center"/>
+                <Label
+                    Text="No recipes found"
+                    FontSize="18"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource MidnightBlue}"
+                    HorizontalOptions="Center"/>
+                <Label
+                    Text="Try different ingredients or clear filters"
+                    FontSize="13"
+                    TextColor="{StaticResource Gray400}"
+                    HorizontalOptions="Center"
+                    HorizontalTextAlignment="Center"/>
+                <Border
+                    StrokeThickness="0"
+                    BackgroundColor="{StaticResource Primary}"
+                    Padding="20,12"
+                    Margin="0,8,0,0">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="14"/>
+                    </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ClearFiltersCommand}"/>
+                    </Border.GestureRecognizers>
+                    <Label
+                        Text="Clear filters"
+                        TextColor="White"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        HorizontalOptions="Center"/>
+                </Border>
+            </VerticalStackLayout>
+
             <!-- ═══ RECIPE LIST ═══ -->
             <CollectionView
-                ItemsSource="{Binding FilteredRecipes}"
+                ItemsSource="{Binding Recipes}"
+                IsVisible="{Binding IsNotEmpty}"
                 Margin="16,0,16,24"
                 SelectionMode="None">
 

@@ -4,11 +4,6 @@ using System.Windows.Input;
 using WhatToCook.MAUI.Models;
 using WhatToCook.MAUI.Services.Interfaces;
 using WhatToCook.MAUI.ViewModels.Recipe;
-
-
-
-// ВАЖЛИВО: namespace залишаємо Recipes (з "s")
-// Але alias для моделі вирішує конфлікт з папкою/namespace "Recipe"
 using RecipeModel = WhatToCook.MAUI.Models.Recipe;
 
 namespace WhatToCook.MAUI.ViewModels.Recipes;

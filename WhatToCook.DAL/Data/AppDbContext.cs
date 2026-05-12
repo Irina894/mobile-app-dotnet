@@ -44,8 +44,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<FavoriteRecipe>(entity =>
         {
             entity.HasKey(fr => fr.Id);
-            entity.HasOne(fr => fr.User).WithMany(u => u.FavoriteRecipes).HasForeignKey(fr => fr.UserId);
-            entity.HasOne(fr => fr.Recipe).WithMany(r => r.FavoriteRecipes).HasForeignKey(fr => fr.RecipeId);
+            entity.HasOne(fr => fr.User).WithMany(u => u.FavoriteRecipes)
+                  .HasForeignKey(fr => fr.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(fr => fr.Recipe).WithMany(r => r.FavoriteRecipes)
+                  .HasForeignKey(fr => fr.RecipeId).OnDelete(DeleteBehavior.Cascade);
+            // Гарантуємо унікальність пари UserId+RecipeId
+            entity.HasIndex(fr => new { fr.UserId, fr.RecipeId }).IsUnique();
         });
 
         modelBuilder.Entity<RecipeIngredient>(entity =>

@@ -18,7 +18,6 @@ public class IngredientItem : INotifyPropertyChanged
     [JsonPropertyName("category")]
     public string Category { get; set; } = string.Empty;
 
-    // IsSelected — локальне, не надсилається на сервер
     [JsonIgnore]
     private bool _isSelected;
 
@@ -32,15 +31,24 @@ public class IngredientItem : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(SelectionBorderColor));
             OnPropertyChanged(nameof(SelectionBackground));
+            OnPropertyChanged(nameof(ChipTextColor));
         }
     }
 
-    // Візуальний стан для UI
+    // Колір рамки чіпса
     [JsonIgnore]
-    public string SelectionBorderColor => IsSelected ? "#1E40AF" : "Transparent";
+    public string SelectionBorderColor =>
+        IsSelected ? "#1E40AF" : "#E5E7EB";
 
+    // Фон чіпса
     [JsonIgnore]
-    public string SelectionBackground => IsSelected ? "#EFF6FF" : "Transparent";
+    public string SelectionBackground =>
+        IsSelected ? "#EFF6FF" : "White";
+
+    // Колір тексту чіпса
+    [JsonIgnore]
+    public string ChipTextColor =>
+        IsSelected ? "#1E40AF" : "#374151";
 
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string n = "") =>

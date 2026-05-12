@@ -14,8 +14,8 @@ public class RecipeDto
     public string AccentColor { get; set; } = "#1E40AF";
     public string AccentTextColor { get; set; } = "#1E3A8A";
     public bool IsMyRecipe { get; set; }
+    public bool IsFavorite { get; set; }   // ← НОВЕ ПОЛЕ
     public DateTime CreatedAt { get; set; }
 
-    // Інгредієнти цього рецепту (тільки для GetById)
     public List<RecipeIngredientDto> Ingredients { get; set; } = new();
 }

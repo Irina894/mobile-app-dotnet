@@ -1,10 +1,9 @@
+using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using WhatToCook.MAUI.Services;
 using WhatToCook.MAUI.Services.Interfaces;
 using WhatToCook.MAUI.ViewModels;
-using WhatToCook.MAUI.ViewModels.Recipes;
 using WhatToCook.MAUI.Views;
-using WhatToCook.MAUI.Views.Recipe;
 
 namespace WhatToCook.MAUI;
 
@@ -14,6 +13,7 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
 
+        builder.UseMauiApp<App>().UseMauiCommunityToolkit(); // Обов'язково!
         builder
             .UseMauiApp<App>()
             .ConfigureFonts(fonts =>
@@ -30,19 +30,14 @@ public static class MauiProgram
 
         // ── Сервіси ───────────────────────────────────────────────────────
         builder.Services.AddSingleton<IRecipeApiService, RecipeApiService>();
+        builder.Services.AddSingleton<IFavoriteApiService, FavoriteApiService>();
 
         // ── AppShell ──────────────────────────────────────────────────────
         builder.Services.AddSingleton<AppShell>();
 
-        // ── Сторінки та ViewModel (Tab bar) ──────────────────────────────
+        // ── Tab bar сторінки ──────────────────────────────────────────────
         builder.Services.AddTransient<HomeViewModel>();
         builder.Services.AddTransient<HomePage>();
-
-        builder.Services.AddTransient<RecipeListViewModel>();
-        builder.Services.AddTransient<RecipeListPage>();
-
-        builder.Services.AddTransient<ProfileViewModel>();
-        builder.Services.AddTransient<ProfilePage>();
 
         builder.Services.AddTransient<CalendarViewModel>();
         builder.Services.AddTransient<CalendarPage>();
@@ -53,7 +48,10 @@ public static class MauiProgram
         builder.Services.AddTransient<FavoritesViewModel>();
         builder.Services.AddTransient<FavoritesPage>();
 
-        // ── Детальна сторінка рецепта (навігаційна, не в Tab bar) ────────
+        builder.Services.AddTransient<ProfileViewModel>();
+        builder.Services.AddTransient<ProfilePage>();
+
+        // ── Детальна сторінка (навігаційна) ──────────────────────────────
         builder.Services.AddTransient<RecipeDetailViewModel>();
         builder.Services.AddTransient<RecipeDetailPage>();
 

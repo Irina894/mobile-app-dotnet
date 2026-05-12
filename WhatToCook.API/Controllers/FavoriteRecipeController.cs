@@ -2,39 +2,45 @@
 using WhatToCook.BLL.DTOs.Recipe;
 using WhatToCook.BLL.Interfaces;
 
-namespace WhatToCook.API.Controllers
+namespace WhatToCook.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class FavoriteRecipeController : ControllerBase
 {
-    
-    [ApiController] // Обов'язково для Swagger 
-    [Route("api/[controller]")] // Шлях api/FavoriteRecipe 
-    public class FavoriteRecipeController : ControllerBase // Успадковуємо ControllerBase [cite: 600]
+    private readonly IFavoriteService _favoriteService;
+
+    public FavoriteRecipeController(IFavoriteService favoriteService)
     {
-        private readonly IFavoriteService _favoriteService;
+        _favoriteService = favoriteService;
+    }
 
-        public FavoriteRecipeController(IFavoriteService favoriteService)
-        {
-            _favoriteService = favoriteService;
-        }
+    // GET api/FavoriteRecipe/user/1
+    [HttpGet("user/{userId}")]
+    public async Task<ActionResult<IEnumerable<FavoriteRecipeDto>>> GetUserFavorites(int userId)
+        => Ok(await _favoriteService.GetUserFavoritesAsync(userId));
 
-        [HttpGet("user/{userId}")] // Отримати всі обрані користувача [cite: 599]
-        public async Task<ActionResult<IEnumerable<FavoriteRecipeDto>>> GetUserFavorites(int userId)
-        {
-            var result = await _favoriteService.GetUserFavoritesAsync(userId);
-            return Ok(result);
-        }
+    // GET api/FavoriteRecipe/user/1/recipes  ← повертає RecipeDto, зручніше для UI
+    [HttpGet("user/{userId}/recipes")]
+    public async Task<ActionResult<IEnumerable<RecipeDto>>> GetUserFavoriteRecipes(int userId)
+        => Ok(await _favoriteService.GetUserFavoriteRecipesAsync(userId));
 
-        [HttpPost] // Додати в обране [cite: 599]
-        public async Task<ActionResult<FavoriteRecipeDto>> Add(CreateFavoriteRecipeDto dto)
-        {
-            var result = await _favoriteService.AddToFavoritesAsync(dto);
-            return Ok(result);
-        }
+    [HttpPost]
+    public async Task<ActionResult<FavoriteRecipeDto>> Add(CreateFavoriteRecipeDto dto)
+        => Ok(await _favoriteService.AddToFavoritesAsync(dto));
 
-        [HttpDelete("user/{userId}/recipe/{recipeId}")] // Видалити [cite: 599]
-        public async Task<IActionResult> Remove(int userId, int recipeId)
-        {
-            await _favoriteService.RemoveFromFavoritesAsync(userId, recipeId);
-            return NoContent();
-        }
+    // POST api/FavoriteRecipe/toggle?userId=1&recipeId=5
+    [HttpPost("toggle")]
+    public async Task<ActionResult<object>> Toggle([FromQuery] int userId, [FromQuery] int recipeId)
+    {
+        var isFav = await _favoriteService.ToggleAsync(userId, recipeId);
+        return Ok(new { isFavorite = isFav });
+    }
+
+    [HttpDelete("user/{userId}/recipe/{recipeId}")]
+    public async Task<IActionResult> Remove(int userId, int recipeId)
+    {
+        await _favoriteService.RemoveFromFavoritesAsync(userId, recipeId);
+        return NoContent();
     }
 }
